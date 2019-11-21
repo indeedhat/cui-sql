@@ -6,6 +6,7 @@ import (
 
 func renderError(g *gocui.Gui) error {
 	if !views.Error.Visible {
+		g.DeleteView(views.Error.Title)
 		return nil
 	}
 

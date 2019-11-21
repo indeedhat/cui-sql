@@ -25,9 +25,10 @@ func bindTreeKeys(g *gocui.Gui) error {
 	}
 
 	err = g.SetKeybinding(V_TREE, 'o', gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+		_, offset := v.Origin()
 		_, y := v.Cursor()
 
-		limb := tre.FindByIndex(y, true)
+		limb := tre.FindByIndex(y+offset, true)
 		switch branch := limb.(type) {
 		case *tree.Branch:
 			branch.Toggle()
@@ -38,8 +39,9 @@ func bindTreeKeys(g *gocui.Gui) error {
 	})
 
 	err = g.SetKeybinding(V_TREE, gocui.KeyEnter, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+		_, offset := v.Origin()
 		_, y := v.Cursor()
-		l := tre.FindByIndex(y, true)
+		l := tre.FindByIndex(y+offset, true)
 		switch branch := l.(type) {
 		case *tree.Branch:
 			database = branch.Key
@@ -50,11 +52,22 @@ func bindTreeKeys(g *gocui.Gui) error {
 		return nil
 	})
 
-	return err
+	if err := views.Tree.bindChangeView(g, views.Editor, gocui.KeyCtrlL, true); nil != err {
+		return err
+	}
+	if err := views.Tree.bindChangeView(g, views.Editor, gocui.KeyCtrlK, true); nil != err {
+		return err
+	}
+	if err := views.Tree.bindChangeView(g, views.Results, gocui.KeyCtrlJ, true); nil != err {
+		return err
+	}
+
+	return nil
 }
 
 func renderTree(g *gocui.Gui) error {
 	if !views.Tree.Visible {
+		g.DeleteView(views.Tree.Title)
 		return nil
 	}
 

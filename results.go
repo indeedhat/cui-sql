@@ -8,6 +8,7 @@ import (
 
 func renderResults(g *gocui.Gui) error {
 	if !views.Results.Visible {
+		g.DeleteView(views.Results.Title)
 		return nil
 	}
 
@@ -62,6 +63,16 @@ func bindResults(g *gocui.Gui) error {
 		v.MoveCursor(0, 1, false)
 		return nil
 	})
+	if nil != err {
+		return err
+	}
+
+	if err := views.Results.bindChangeView(g, views.Tree, gocui.KeyCtrlH, true); nil != err {
+		return err
+	}
+	if err := views.Results.bindChangeView(g, views.Editor, gocui.KeyCtrlK, true); nil != err {
+		return err
+	}
 
 	return err
 }

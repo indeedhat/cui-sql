@@ -19,6 +19,7 @@ func main() {
 
 	g, err := initGui()
 	mustNotError(err)
+	defer g.Close()
 
 	selectDatabase()
 	if err := g.MainLoop(); nil != err && gocui.ErrQuit != err {
@@ -39,7 +40,6 @@ func initGui() (*gocui.Gui, error) {
 		return nil, err
 	}
 
-	defer g.Close()
 	g.SetManagerFunc(render)
 
 	g.Highlight = true
@@ -61,6 +61,10 @@ func render(g *gocui.Gui) error {
 		return err
 	}
 
+	if err := renderQueryList(g); nil != err {
+		return err
+	}
+
 	if err := renderError(g); nil != err {
 		return err
 	}
@@ -69,60 +73,62 @@ func render(g *gocui.Gui) error {
 		return err
 	}
 
-	if nil == g.CurrentView() {
-		g.SetCurrentView(V_TREE)
+	if err := renderHelp(g); nil != err {
+		return err
 	}
 
+	g.SetCurrentView(views.CurrentView)
 	return nil
 }
 
 func bindKeys(g *gocui.Gui) error {
 	err := g.SetKeybinding("", gocui.KeyCtrlQ, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+
 		return gocui.ErrQuit
 	})
 	if nil != err {
 		return err
 	}
 
-	err = g.SetKeybinding("", gocui.KeyCtrlT, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
-		g.Cursor = false
-		_, err := g.SetCurrentView(V_TREE)
+	if err := views.Window.bindChangeView(g, views.Tree, gocui.KeyCtrlT, true); nil != err {
 		return err
+	}
+
+	if err := views.Window.bindChangeView(g, views.Editor, gocui.KeyCtrlE, true); nil != err {
+		return err
+	}
+
+	if err := views.Window.bindChangeView(g, views.Results, gocui.KeyCtrlR, true); nil != err {
+		return err
+	}
+
+	err = g.SetKeybinding("", '?', gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+		views.Help.Toggle()
+		if views.Help.Visible {
+			views.SelectView(g, views.Help)
+		} else {
+			views.SelectView(g, views.Tree)
+		}
+
+		return nil
 	})
 	if nil != err {
 		return err
 	}
 
-	err = g.SetKeybinding("", gocui.KeyCtrlE, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
-		g.Cursor = true
-		_, err := g.SetCurrentView(V_EDITOR)
-		return err
-	})
-	if nil != err {
+	if err = bindTreeKeys(g); nil != err {
 		return err
 	}
 
-	err = g.SetKeybinding("", gocui.KeyCtrlR, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
-		g.Cursor = false
-		_, err := g.SetCurrentView(V_RESULTS)
-		return err
-	})
-	if nil != err {
+	if err = bindEditor(g); nil != err {
 		return err
 	}
 
-	err = bindTreeKeys(g)
-	if nil != err {
+	if err = bindResults(g); nil != err {
 		return err
 	}
 
-	err = bindEditor(g)
-	if nil != err {
-		return err
-	}
-
-	err = bindResults(g)
-	if nil != err {
+	if err = bindQueryList(g); nil != err {
 		return err
 	}
 
