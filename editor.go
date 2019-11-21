@@ -1,28 +1,23 @@
 package main
 
 import (
-	"log"
-
 	"github.com/jroimartin/gocui"
 )
 
 func renderEditor(g *gocui.Gui) error {
-	x, y := g.Size()
-
-	v, err := g.SetView(V_EDITOR, x/3+1, 0, x-1, y/6*4)
-
-	if nil != err && gocui.ErrUnknownView != err {
-		log.Println("render")
-		log.Fatal(err)
+	if !views.Editor.Visible {
+		return nil
 	}
 
-	v.SelFgColor = gocui.ColorBlack
-	v.SelBgColor = gocui.ColorBlue
+	v, err := initView(g, views.Editor)
+
+	if nil != err {
+		return err
+	}
+
 	v.Editable = true
 	v.Wrap = true
 	v.Autoscroll = true
-
-	v.Title = V_EDITOR
 
 	return nil
 }
@@ -36,16 +31,22 @@ func bindEditor(g *gocui.Gui) error {
 
 		rows, err := query(database, v.Buffer())
 		if nil != err {
-			reDrawResultsError(resView, err)
+			views.Results.Visible = false
+			views.Error.Visible = true
+			reDrawError(resView, err)
 			return nil
 		}
 
 		data, err := fetchRows(rows)
 		if nil != err {
-			reDrawResultsError(resView, err)
+			views.Results.Visible = false
+			views.Error.Visible = true
+			reDrawError(resView, err)
 			return nil
 		}
 
+		views.Results.Visible = true
+		views.Error.Visible = false
 		reDrawResults(resView, data)
 
 		return nil

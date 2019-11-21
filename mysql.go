@@ -6,6 +6,7 @@ import (
 	"log"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/indeedhat/tree"
 )
 
 var connection *sql.DB
@@ -112,4 +113,19 @@ func query(database, query string, args ...interface{}) (*sql.Rows, error) {
 	}
 
 	return rows, nil
+}
+
+func selectDatabase() {
+	selected := fmt.Sprintf("\033[1m%s\033[0m", database)
+
+	for _, l := range tre.Root.Limbs {
+		switch branch := l.(type) {
+		case *tree.Branch:
+			if branch.Key == database {
+				branch.Text = selected
+			} else {
+				branch.Text = branch.Key
+			}
+		}
+	}
 }

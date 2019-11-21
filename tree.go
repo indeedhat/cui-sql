@@ -1,9 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/indeedhat/tree"
 	"github.com/jroimartin/gocui"
 )
@@ -57,20 +54,17 @@ func bindTreeKeys(g *gocui.Gui) error {
 }
 
 func renderTree(g *gocui.Gui) error {
-	x, y := g.Size()
-	v, err := g.SetView(V_TREE, 0, 0, x/3, y-1)
-
-	if nil != err && gocui.ErrUnknownView != err {
-		log.Println("render")
-		log.Fatal(err)
+	if !views.Tree.Visible {
+		return nil
 	}
 
-	v.SelFgColor = gocui.ColorBlack
-	v.SelBgColor = gocui.ColorBlue
+	v, err := initView(g, views.Tree)
+	if nil != err {
+		return err
+	}
+
 	v.Highlight = true
 	v.Wrap = false
-
-	v.Title = V_TREE
 
 	reDrawTree(v)
 
@@ -115,19 +109,4 @@ func plantTree() error {
 	tre.Plant()
 
 	return nil
-}
-
-func selectDatabase() {
-	selected := fmt.Sprintf("\033[1m%s\033[0m", database)
-
-	for _, l := range tre.Root.Limbs {
-		switch branch := l.(type) {
-		case *tree.Branch:
-			if branch.Key == database {
-				branch.Text = selected
-			} else {
-				branch.Text = branch.Key
-			}
-		}
-	}
 }

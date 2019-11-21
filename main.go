@@ -5,25 +5,38 @@ import (
 	"log"
 )
 
-const (
-	V_TREE    = " Tree "
-	V_EDITOR  = " Editor "
-	V_RESULTS = " Results "
-)
-
 func main() {
-	if err := mysqlConnect(); nil != err {
-		log.Fatal("Failed to connect to db")
-	}
+	mustNotError(
+		mysqlConnect(),
+	)
 	defer connection.Close()
 
-	if err := plantTree(); nil != err {
-		log.Fatalf("Failed to build tree: %s", err)
-	}
+	mustNotError(
+		plantTree(),
+	)
 
-	g, err := gocui.NewGui(gocui.OutputNormal)
+	initViewManager()
+
+	g, err := initGui()
+	mustNotError(err)
+
+	selectDatabase()
+	if err := g.MainLoop(); nil != err && gocui.ErrQuit != err {
+		log.Println("main loop")
+		mustNotError(err)
+	}
+}
+
+func mustNotError(err error) {
 	if nil != err {
 		log.Fatal(err)
+	}
+}
+
+func initGui() (*gocui.Gui, error) {
+	g, err := gocui.NewGui(gocui.OutputNormal)
+	if nil != err {
+		return nil, err
 	}
 
 	defer g.Close()
@@ -33,40 +46,34 @@ func main() {
 	g.SelFgColor = gocui.ColorBlue
 
 	if err := bindKeys(g); nil != err {
-		log.Println("bind keys")
-		log.Fatal(err)
+		return nil, err
 	}
 
-	selectDatabase()
-	if err := g.MainLoop(); nil != err && gocui.ErrQuit != err {
-		log.Println("main loop")
-		log.Fatal(err)
-	}
+	return g, nil
 }
 
 func render(g *gocui.Gui) error {
-	err := renderTree(g)
-	if nil != err {
-		log.Println(err)
+	if err := renderTree(g); nil != err {
 		return err
 	}
 
-	err = renderEditor(g)
-	if nil != err {
-		log.Println(err)
+	if err := renderEditor(g); nil != err {
 		return err
 	}
 
-	err = renderResults(g)
-	if nil != err {
-		log.Println(err)
+	if err := renderError(g); nil != err {
+		return err
+	}
+
+	if err := renderResults(g); nil != err {
 		return err
 	}
 
 	if nil == g.CurrentView() {
 		g.SetCurrentView(V_TREE)
 	}
-	return err
+
+	return nil
 }
 
 func bindKeys(g *gocui.Gui) error {
